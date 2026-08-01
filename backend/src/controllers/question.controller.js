@@ -1,7 +1,10 @@
 import path from "path";
 import fs from "fs/promises";
 import { get_question_by_topic } from "../services/ai.service.js";
+import { predict_next_difficulty } from "../services/ml.service.js";
 import { calculateStateAndNextQuestion } from "../utils/ruleEngine.js";
+import { buildLearningRoadmap } from "../utils/conceptRoadmap.js";
+import { chooseNextQuestion } from "../utils/questionPolicy.js";
 import { v4 as uuidv4 } from "uuid";
 import prisma from "../config/db.js";
 
@@ -15,7 +18,9 @@ const getQuestionsFromSession = async (session) => {
     });
 };
 
-const pickQuestion = (questions, difficulty, askedQuestions = []) => {
+const pickQuestion = (questions, difficulty, askedQuestions = [], history = [], studentState = {}, roadmap = {}) => {
+    const policySelection = chooseNextQuestion(questions, difficulty, askedQuestions, history, studentState, roadmap);
+    if (policySelection.question) return policySelection.question;
     // 1. Try to find an unasked question of the target difficulty
     const targetUnasked = questions.find(
         question =>
@@ -63,7 +68,7 @@ export const fetch_questions = async (req, res) => {
                 session_id: uuidv4(),
                 topic,
                 asked_questions: [],
-                mastery: 0.1, // starting knowledge
+                mastery: 0.2, // starting knowledge (closer to easy→medium threshold)
                 confidence: 0.5,
                 engagement: 0.8,
                 cognitive_load: 0.2,
@@ -163,7 +168,9 @@ export const get_first_question = async (req, res) => {
         ]);
 
         return res.status(200).json({
-            question
+            question,
+            total_questions: questions.length,
+            questions_asked: 1
         });
 
     } catch (error) {
@@ -214,11 +221,58 @@ export const get_next_question = async (req, res) => {
         }
 
         // Calculate next student state and next difficulty level
-        const { studentState, nextDifficulty, updatedHistory, isCorrect } = calculateStateAndNextQuestion(
+        // Correctness is a server-side fact. Client telemetry may include an
+        // `isCorrect` hint for legacy callers, but it must never override the
+        // answer key held by this session's question record.
+        const submittedAnswer = features.selected_answer ?? features.selectedAnswer ?? features.answer;
+        const engineFeatures = {
+            ...features,
+            ...(submittedAnswer !== undefined
+                ? { isCorrect: String(submittedAnswer).trim() === String(curr_question.correctAnswer).trim() }
+                : {})
+        };
+
+        const { studentState, nextDifficulty, recommendation, updatedHistory, isCorrect, normalizedFeatures } = calculateStateAndNextQuestion(
             curr_session,
             curr_question,
-            features
+            engineFeatures
         );
+        let effectiveDifficulty = nextDifficulty;
+        let effectiveRecommendation = recommendation;
+        if (process.env.ADAPTIVE_POLICY === "ml") {
+            try {
+                const mlResult = await predict_next_difficulty({
+                    isCorrect,
+                    timeTaken: normalizedFeatures.total_response_time,
+                    attempts: normalizedFeatures.attempts,
+                    pastAccuracy: curr_session.correct_answers / Math.max(1, curr_session.correct_answers + curr_session.wrong_answers),
+                    difficulty_score: curr_question.difficultyScore,
+                    knowledge_before: studentState.knowledge,
+                    fatigue_before: studentState.fatigue,
+                    total_response_time: normalizedFeatures.total_response_time,
+                    reading_time: normalizedFeatures.reading_time,
+                    time_after_last_interaction: normalizedFeatures.time_after_last_interaction,
+                    skip: normalizedFeatures.skip,
+                    option_changes: normalizedFeatures.option_changes,
+                    mouse_distance: normalizedFeatures.mouse_distance,
+                    mouse_speed: normalizedFeatures.mouse_speed,
+                    hover_time: normalizedFeatures.hover_time,
+                    typing_speed: normalizedFeatures.typing_speed,
+                    backspaces: normalizedFeatures.backspaces,
+                    delete_frequency: normalizedFeatures.delete_frequency,
+                    pause_duration: normalizedFeatures.pause_duration,
+                    question_number: updatedHistory.length,
+                    session_duration: normalizedFeatures.session_duration,
+                    tab_switches: normalizedFeatures.tab_switches,
+                });
+                if (["easy", "medium", "hard"].includes(mlResult.nextDifficulty)) {
+                    effectiveDifficulty = mlResult.nextDifficulty;
+                    effectiveRecommendation = { ...recommendation, difficulty: effectiveDifficulty, policy_version: "ml-v1", model: mlResult.model, predicted_success: mlResult.predictedSuccess, reasons: [...recommendation.reasons, "ml_policy_override"] };
+                }
+            } catch (error) {
+                console.warn("ML policy unavailable; retaining rule recommendation:", error.message);
+            }
+        }
 
         const answerCounts = {
             correct_answers: isCorrect
@@ -238,6 +292,7 @@ export const get_next_question = async (req, res) => {
             history: updatedHistory,
             ...answerCounts
         };
+        const learningRoadmap = buildLearningRoadmap(questions, updatedHistory, studentState);
 
         // Check if student has achieved mastery
         if (studentState.knowledge >= MASTERY_THRESHOLD_NEW) {
@@ -251,17 +306,24 @@ export const get_next_question = async (req, res) => {
             return res.status(200).json({
                 topic_mastered: true,
                 mastery: studentState.knowledge,
-                student_state: studentState
+                is_correct: isCorrect,
+                student_state: studentState,
+                recommendation: effectiveRecommendation,
+                learning_roadmap: learningRoadmap
             });
         }
 
         // Select the next question based on the calculated next difficulty
         const askedQuestions = curr_session.asked_questions ?? [];
-        const next_question = pickQuestion(
+        const { question: nextQuestionFromPolicy, topicWeights } = chooseNextQuestion(
             questions,
-            nextDifficulty,
-            askedQuestions
+            effectiveDifficulty,
+            askedQuestions,
+            updatedHistory,
+            studentState,
+            learningRoadmap
         );
+        const next_question = nextQuestionFromPolicy;
 
         if (!next_question) {
             return res.status(404).json({
@@ -284,7 +346,7 @@ export const get_next_question = async (req, res) => {
                 },
                 data: {
                     ...updated_session_data,
-                    current_difficulty: nextDifficulty,
+                    current_difficulty: effectiveDifficulty,
                     asked_questions: [
                         ...askedQuestions,
                         next_question.id
@@ -297,8 +359,14 @@ export const get_next_question = async (req, res) => {
             next_question,
             topic_mastered: false,
             mastery: studentState.knowledge,
-            current_difficulty: nextDifficulty,
-            student_state: studentState
+            is_correct: isCorrect,
+            current_difficulty: effectiveDifficulty,
+            student_state: studentState,
+            recommendation: effectiveRecommendation,
+            learning_roadmap: learningRoadmap,
+            topic_weights: topicWeights,
+            total_questions: questions.length,
+            questions_asked: askedQuestions.length + 1
         });
 
     } catch (error) {

@@ -1,0 +1,53 @@
+{
+  "evaluation_type": "synthetic_closed_loop",
+  "seed": 20260726,
+  "learners": 40,
+  "max_items": 80,
+  "mastery_threshold": 0.6,
+  "policies": {
+    "static": {
+      "mastery_rate": 0,
+      "mean_time_seconds": 6491.970588,
+      "median_time_seconds": 6490.437274,
+      "mean_questions": 80,
+      "mean_final_mastery": 0.225153,
+      "time_mean_95_ci": [
+        6430.096647,
+        6548.628266
+      ]
+    },
+    "legacy_rule": {
+      "mastery_rate": 0,
+      "mean_time_seconds": 3816.302249,
+      "median_time_seconds": 3714.599012,
+      "mean_questions": 80,
+      "mean_final_mastery": 0.318276,
+      "time_mean_95_ci": [
+        3695.975723,
+        3932.93569
+      ]
+    },
+    "improved_rule": {
+      "mastery_rate": 0.05,
+      "mean_time_seconds": 3576.688078,
+      "median_time_seconds": 3634.509359,
+      "mean_questions": 78.25,
+      "mean_final_mastery": 0.365349,
+      "time_mean_95_ci": [
+        3436.760921,
+        3691.269363
+      ]
+    },
+    "ml_based": {
+      "mastery_rate": 0.175,
+      "mean_time_seconds": 3339.568975,
+      "median_time_seconds": 3505.594146,
+      "mean_questions": 75.825,
+      "mean_final_mastery": 0.408584,
+      "time_mean_95_ci": [
+        3182.425631,
+        3465.697616
+      ]
+    }
+  }
+}

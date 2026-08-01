@@ -1,0 +1,9 @@
+# Research benchmark dependencies. Install after the service requirements:
+# ml-service/venv/bin/pip install -r ml-service/requirements-research.txt
+catboost==1.2.10
+lightgbm==4.6.0
+numpy==2.0.2
+pandas==2.3.3
+scikit-learn==1.6.1
+scipy==1.13.1
+xgboost==2.1.4

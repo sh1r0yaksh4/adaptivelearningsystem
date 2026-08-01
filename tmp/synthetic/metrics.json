@@ -1,0 +1,62 @@
+{
+  "dataset": "tmp/synthetic/benchmark.csv",
+  "seed": 20260726,
+  "target": "next_correct",
+  "split": {
+    "train_rows": 660,
+    "test_rows": 220,
+    "train_learners": 60,
+    "test_learners": 20
+  },
+  "models": {
+    "logistic_regression": {
+      "accuracy": 0.718182,
+      "precision": 0.7,
+      "recall": 0.726415,
+      "f1": 0.712963,
+      "roc_auc": 0.768123,
+      "training_seconds": 0.003985,
+      "inference_ms_per_row": 0.020144
+    },
+    "decision_tree": {
+      "accuracy": 0.704545,
+      "precision": 0.72043,
+      "recall": 0.632075,
+      "f1": 0.673367,
+      "roc_auc": 0.719588,
+      "training_seconds": 0.005459,
+      "inference_ms_per_row": 0.010561
+    },
+    "random_forest": {
+      "accuracy": 0.718182,
+      "precision": 0.692982,
+      "recall": 0.745283,
+      "f1": 0.718182,
+      "roc_auc": 0.796342,
+      "training_seconds": 0.111579,
+      "inference_ms_per_row": 0.139378
+    },
+    "mlp": {
+      "accuracy": 0.668182,
+      "precision": 0.651376,
+      "recall": 0.669811,
+      "f1": 0.660465,
+      "roc_auc": 0.669067,
+      "training_seconds": 0.019125,
+      "inference_ms_per_row": 0.010417
+    },
+    "catboost": {
+      "accuracy": 0.745455,
+      "precision": 0.719298,
+      "recall": 0.773585,
+      "f1": 0.745455,
+      "roc_auc": 0.796591,
+      "training_seconds": 0.095997,
+      "inference_ms_per_row": 0.015093
+    }
+  },
+  "unavailable_models": {
+    "xgboost": "XGBoostError: ",
+    "lightgbm": "OSError: dlopen(/Users/ishan/Code/adaptivelearningsystem/ml-service/venv/lib/python3.9/site-packages/lightgbm/lib/lib_lightgbm.dylib, 0x0006): Library not loaded: @rpath/libomp.dylib"
+  }
+}

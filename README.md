@@ -1,6 +1,6 @@
 # Adaptive Learning System
 
-Run the app with one command:
+Run the research app with one command:
 
 ```bash
 ./scripts/dev.sh
@@ -8,8 +8,11 @@ Run the app with one command:
 
 This starts:
 
+- a local PostgreSQL container on port `54329` (Docker)
 - ML service: `http://localhost:8000`
 - Express backend and app: `http://localhost:4000/index.html`
+
+The script applies the Prisma schema and enables the trained ML policy by default. The UI starts a `multi-topic cse` backend session, so its recommendations, concept roadmap, and topic weights come from the research backend rather than the old static demo bank.
 
 The backend serves the frontend, so you do not need a separate frontend server for normal development.
 

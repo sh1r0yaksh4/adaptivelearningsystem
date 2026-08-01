@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import questionRoutes from "./routes/question.js"
 import userRoutes from "./routes/user.js"
+import roadmapRoutes from "./routes/roadmap.js"
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use(express.json());
 app.use(express.static(frontendPath));
 app.use('/user', userRoutes);
 app.use('/question', questionRoutes);
+app.use('/roadmap', roadmapRoutes);
 
 
 

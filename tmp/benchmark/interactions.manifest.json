@@ -1,0 +1,10 @@
+{
+  "schema_version": "alp-synthetic-v1",
+  "created_at": "2026-07-26T07:20:14.860631+00:00",
+  "seed": 20260726,
+  "learners": 100,
+  "items_per_learner": 16,
+  "records": 1600,
+  "sha256": "104a61eea5e8b7a7fbd8832969eefc7e8049227b2594e53379f37f5d5adac89c",
+  "generator": "StudentSimulator"
+}

@@ -6,8 +6,12 @@ import {
     updateCognitiveLoad, 
     updateFatigue, 
     selectNextDifficulty, 
+    recommendLearningAction,
+    buildDifficultyDecision,
     calculateStateAndNextQuestion 
 } from "./ruleEngine.js";
+import { buildLearningRoadmap } from "./conceptRoadmap.js";
+import { chooseNextQuestion } from "./questionPolicy.js";
 
 // Utility for assertions
 function assert(condition, message) {
@@ -61,6 +65,8 @@ function runTests() {
     assert(prepMixed.reading_time === 12, "Should extract nested camelCase readingTime");
     assert(prepMixed.isCorrect === true, "Should extract case-insensitive ISCORRECT");
     assert(prepMixed.mouse_distance === 250, "Should extract nested mouseDistance");
+    assert(preprocessFeatures({ isCorrect: "false" }).isCorrect === false, "Should parse string false safely");
+    assert(preprocessFeatures({ isCorrect: "yes", attempts: "2" }).isCorrect === true, "Should parse supported boolean strings");
     console.log("");
 
     // ----------------------------------------------------
@@ -76,12 +82,12 @@ function runTests() {
     // Correct on hard
     let prev = knowledge;
     knowledge = updateKnowledge(knowledge, { isCorrect: true, difficulty: "hard", attempts: 1, skip: false });
-    assertApprox(knowledge - prev, 0.15, `Knowledge should increase by 0.15 on hard correct: ${knowledge}`);
+    assertApprox(knowledge - prev, 0.18, `Knowledge should increase by 0.18 on hard correct: ${knowledge}`);
     
     // Attempt penalty
     prev = knowledge;
     knowledge = updateKnowledge(knowledge, { isCorrect: true, difficulty: "hard", attempts: 3, skip: false });
-    assertApprox(knowledge - prev, 0.05, `Knowledge increase should be penalized by attempts (0.15 / 3 = 0.05): ${knowledge}`);
+    assertApprox(knowledge - prev, 0.06, `Knowledge increase should be penalized by attempts (0.18 / 3 = 0.06): ${knowledge}`);
     
     // Wrong on easy
     prev = knowledge;
@@ -186,8 +192,16 @@ function runTests() {
     // High Fatigue reduction
     assert(selectNextDifficulty({ knowledge: 0.8, confidence: 0.5, engagement: 0.8, cognitive_load: 0.2, fatigue: 0.8 }) === "medium", "Should reduce difficulty if fatigue is high");
     
-    // High Confidence & Knowledge increase
-    assert(selectNextDifficulty({ knowledge: 0.72, confidence: 0.8, engagement: 0.8, cognitive_load: 0.2, fatigue: 0.1 }) === "hard", "Should increase difficulty for high confidence + knowledge");
+    // A single high-confidence state does not cause an unsupported jump.
+    assert(selectNextDifficulty({ knowledge: 0.72, confidence: 0.8, engagement: 0.8, cognitive_load: 0.2, fatigue: 0.1 }) === "medium", "Should require sustained evidence before increasing difficulty");
+    const action = recommendLearningAction({ knowledge: 0.8, confidence: 0.8, engagement: 0.8, cognitive_load: 0.2, fatigue: 0.1 });
+    assert(action.action === "advance" && action.difficulty === "hard", "Should return an explainable challenge recommendation");
+    const contextualDecision = buildDifficultyDecision(
+        { knowledge: 0.7, confidence: 0.8, engagement: 0.8, cognitive_load: 0.2, fatigue: 0.1 },
+        [{ isCorrect: true, timeRatio: 0.8 }, { isCorrect: true, timeRatio: 0.9 }],
+        { isCorrect: true, timeRatio: 0.8, difficulty: "medium" }
+    );
+    assert(contextualDecision.difficulty === "hard", "Should advance after sustained accurate, efficient performance");
     console.log("");
 
     // ----------------------------------------------------
@@ -221,6 +235,21 @@ function runTests() {
     assert(result.studentState.confidence > 0.5, "Confidence should increase");
     assert(result.updatedHistory.length === 1, "History should contain the new entry");
     assert(result.nextDifficulty === "medium" || result.nextDifficulty === "hard", `Should output valid difficulty: ${result.nextDifficulty}`);
+    assert(result.recommendation.policy_version === "rule-v1.2", "Should include policy provenance");
+
+    const roadmap = buildLearningRoadmap([
+        { id: "q1", concepts: ["Foundations"] },
+        { id: "q2", concepts: ["Applications"] }
+    ], [{ question_id: "q1", isCorrect: true }], result.studentState);
+    assert(roadmap.target_concept === "Applications", "Should recommend the weakest eligible concept");
+    assert(roadmap.roadmap_version === "concept-roadmap-v1", "Should include roadmap provenance");
+
+    const selection = chooseNextQuestion([
+        { id: "tree-review", difficulty: "medium", concepts: ["Binary Trees"] },
+        { id: "recursion-bridge", difficulty: "medium", concepts: ["Recursion", "Binary Trees"] }
+    ], "medium", [], [{ topics: ["Binary Trees"], isCorrect: false }], result.studentState, { target_concept: "Recursion" });
+    assert(selection.question.id === "recursion-bridge", "Should prioritize a weak target concept and its co-teaching topic");
+    assert(selection.topicWeights.recursion > 0, "Should expose dynamic topic weights");
 
     console.log("==========================================");
     console.log("ALL TESTS COMPLETED SUCCESSFULLY!");

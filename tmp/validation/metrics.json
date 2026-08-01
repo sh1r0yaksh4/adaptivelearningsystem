@@ -1,0 +1,77 @@
+{
+  "dataset": "tmp/validation/interactions.csv",
+  "seed": 20260726,
+  "target": "next_correct",
+  "split": {
+    "train_rows": 330,
+    "test_rows": 110,
+    "train_learners": 30,
+    "test_learners": 10
+  },
+  "models": {
+    "logistic_regression": {
+      "accuracy": 0.690909,
+      "precision": 0.676471,
+      "recall": 0.5,
+      "f1": 0.575,
+      "roc_auc": 0.723166,
+      "training_seconds": 0.005316,
+      "inference_ms_per_row": 0.039602
+    },
+    "decision_tree": {
+      "accuracy": 0.545455,
+      "precision": 0.444444,
+      "recall": 0.347826,
+      "f1": 0.390244,
+      "roc_auc": 0.591372,
+      "training_seconds": 0.004685,
+      "inference_ms_per_row": 0.018018
+    },
+    "random_forest": {
+      "accuracy": 0.663636,
+      "precision": 0.604651,
+      "recall": 0.565217,
+      "f1": 0.58427,
+      "roc_auc": 0.754586,
+      "training_seconds": 0.088432,
+      "inference_ms_per_row": 0.273736
+    },
+    "mlp": {
+      "accuracy": 0.672727,
+      "precision": 0.586207,
+      "recall": 0.73913,
+      "f1": 0.653846,
+      "roc_auc": 0.745245,
+      "training_seconds": 0.015366,
+      "inference_ms_per_row": 0.01989
+    },
+    "xgboost": {
+      "accuracy": 0.627273,
+      "precision": 0.555556,
+      "recall": 0.543478,
+      "f1": 0.549451,
+      "roc_auc": 0.729959,
+      "training_seconds": 0.036242,
+      "inference_ms_per_row": 0.027113
+    },
+    "lightgbm": {
+      "accuracy": 0.654545,
+      "precision": 0.6,
+      "recall": 0.521739,
+      "f1": 0.55814,
+      "roc_auc": 0.743886,
+      "training_seconds": 0.145871,
+      "inference_ms_per_row": 0.060345
+    },
+    "catboost": {
+      "accuracy": 0.672727,
+      "precision": 0.619048,
+      "recall": 0.565217,
+      "f1": 0.590909,
+      "roc_auc": 0.742867,
+      "training_seconds": 0.115896,
+      "inference_ms_per_row": 0.034535
+    }
+  },
+  "unavailable_models": {}
+}

@@ -52,3 +52,14 @@ model Question {
   sourceType           String   @default("generated") @map("source_type")
   asked                Boolean  @default(false) @map("asked")
 }
+
+model Learner {
+  id              String   @id @default(uuid())
+  username        String   @unique
+  concept_mastery Json     @default("{}")  // { concept_id: mastery_float }
+  roadmap_state   Json     @default("{}")  // last computed roadmap snapshot
+  total_questions Int      @default(0)
+  total_correct   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

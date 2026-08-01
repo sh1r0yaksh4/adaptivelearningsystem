@@ -6,8 +6,17 @@ ML_PORT="${ML_PORT:-8000}"
 BACKEND_PORT="${PORT:-4000}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
 WITH_FRONTEND="${WITH_FRONTEND:-0}"
+DATABASE_URL="${DATABASE_URL:-postgresql://adaptive_learning:adaptive_learning@127.0.0.1:54329/adaptive_learning?schema=public}"
+ADAPTIVE_POLICY="${ADAPTIVE_POLICY:-ml}"
+ML_PYTHON="$ROOT_DIR/ml-service/venv/bin/python"
 
-pids=()
+if [[ ! -x "$ML_PYTHON" ]]; then
+    ML_PYTHON="python3"
+fi
+
+# Bash 3 treats an empty array as unset under `set -u`; the sentinel keeps
+# cleanup safe before any application process has been started.
+pids=("")
 cleanup_done=0
 
 cleanup() {
@@ -21,7 +30,7 @@ cleanup() {
     echo "Stopping dev services..."
 
     for pid in "${pids[@]}"; do
-        if kill -0 "$pid" 2>/dev/null; then
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
             kill "$pid" 2>/dev/null || true
         fi
     done
@@ -60,17 +69,50 @@ start_service() {
 require_port_free "$ML_PORT" "ML service" "ML_PORT"
 require_port_free "$BACKEND_PORT" "backend" "PORT"
 
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Docker is required to start the local PostgreSQL database."
+    exit 1
+fi
+
+echo "Starting local PostgreSQL..."
+docker compose -f "$ROOT_DIR/docker-compose.dev.yml" up -d postgres
+
+echo "Waiting for PostgreSQL..."
+for _ in {1..30}; do
+    if docker compose -f "$ROOT_DIR/docker-compose.dev.yml" exec -T postgres pg_isready -U adaptive_learning -d adaptive_learning >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+
+if ! docker compose -f "$ROOT_DIR/docker-compose.dev.yml" exec -T postgres pg_isready -U adaptive_learning -d adaptive_learning >/dev/null 2>&1; then
+    echo "PostgreSQL did not become ready. Check: docker compose -f docker-compose.dev.yml logs postgres"
+    exit 1
+fi
+
+if [[ ! -d "$ROOT_DIR/backend/node_modules" ]]; then
+    echo "Installing backend dependencies..."
+    (cd "$ROOT_DIR/backend" && npm install)
+fi
+
+echo "Applying database schema..."
+(
+    cd "$ROOT_DIR/backend"
+    DATABASE_URL="$DATABASE_URL" npx prisma db push
+    DATABASE_URL="$DATABASE_URL" npx prisma generate
+)
+
 if [[ "$WITH_FRONTEND" == "1" ]]; then
     require_port_free "$FRONTEND_PORT" "frontend" "FRONTEND_PORT"
 fi
 
 start_service "ML service on http://localhost:$ML_PORT" \
     "$ROOT_DIR/ml-service" \
-    python3 -m uvicorn app.main:app --host 127.0.0.1 --port "$ML_PORT"
+    "$ML_PYTHON" -m uvicorn app.main:app --host 127.0.0.1 --port "$ML_PORT"
 
 start_service "backend on http://localhost:$BACKEND_PORT" \
     "$ROOT_DIR/backend" \
-    env PORT="$BACKEND_PORT" ML_SERVICE_URL="http://127.0.0.1:$ML_PORT" node server.js
+    env PORT="$BACKEND_PORT" DATABASE_URL="$DATABASE_URL" ADAPTIVE_POLICY="$ADAPTIVE_POLICY" ML_SERVICE_URL="http://127.0.0.1:$ML_PORT" node server.js
 
 if [[ "$WITH_FRONTEND" == "1" ]]; then
     start_service "frontend on http://localhost:$FRONTEND_PORT" \
@@ -83,6 +125,7 @@ echo "Ready."
 echo "App:     http://localhost:$BACKEND_PORT/index.html"
 echo "API:     http://localhost:$BACKEND_PORT"
 echo "ML:      http://localhost:$ML_PORT"
+echo "Policy:  $ADAPTIVE_POLICY"
 
 if [[ "$WITH_FRONTEND" == "1" ]]; then
     echo "Frontend: http://localhost:$FRONTEND_PORT"

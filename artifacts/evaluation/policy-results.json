@@ -1,0 +1,115 @@
+{
+  "evaluation_type": "synthetic_closed_loop",
+  "seed": 20260731,
+  "learners": 300,
+  "max_items": 150,
+  "mastery_threshold": 0.8,
+  "policies": {
+    "static": {
+      "mastery_rate": 0,
+      "mean_time_seconds": 13068.452269,
+      "median_time_seconds": 13098.376346,
+      "mean_questions": 150,
+      "mean_final_mastery": 0.249379,
+      "time_mean_95_ci": [
+        13042.115456,
+        13093.079062
+      ]
+    },
+    "legacy_rule": {
+      "mastery_rate": 0,
+      "mean_time_seconds": 7216.743933,
+      "median_time_seconds": 7035.556956,
+      "mean_questions": 150,
+      "mean_final_mastery": 0.286886,
+      "time_mean_95_ci": [
+        7137.439704,
+        7309.132631
+      ]
+    },
+    "improved_rule": {
+      "mastery_rate": 0,
+      "mean_time_seconds": 7017.023782,
+      "median_time_seconds": 7002.099199,
+      "mean_questions": 150,
+      "mean_final_mastery": 0.29199,
+      "time_mean_95_ci": [
+        6976.662551,
+        7059.053816
+      ]
+    },
+    "ml_based": {
+      "mastery_rate": 0,
+      "mean_time_seconds": 6918.049885,
+      "median_time_seconds": 6925.804496,
+      "mean_questions": 150,
+      "mean_final_mastery": 0.302974,
+      "time_mean_95_ci": [
+        6890.35466,
+        6942.968997
+      ]
+    }
+  },
+  "statistical_tests": [
+    {
+      "policy_a": "static",
+      "policy_b": "legacy_rule",
+      "test_name": "wilcoxon_signed_rank",
+      "statistic": 0.0,
+      "p_value": 0.0,
+      "p_value_bonferroni": 0.0,
+      "cohens_d": 6.916112,
+      "significant_alpha_005": true
+    },
+    {
+      "policy_a": "static",
+      "policy_b": "improved_rule",
+      "test_name": "wilcoxon_signed_rank",
+      "statistic": 0.0,
+      "p_value": 0.0,
+      "p_value_bonferroni": 0.0,
+      "cohens_d": 14.568979,
+      "significant_alpha_005": true
+    },
+    {
+      "policy_a": "static",
+      "policy_b": "ml_based",
+      "test_name": "wilcoxon_signed_rank",
+      "statistic": 0.0,
+      "p_value": 0.0,
+      "p_value_bonferroni": 0.0,
+      "cohens_d": 33.037655,
+      "significant_alpha_005": true
+    },
+    {
+      "policy_a": "legacy_rule",
+      "policy_b": "improved_rule",
+      "test_name": "wilcoxon_signed_rank",
+      "statistic": 14872.0,
+      "p_value": 3e-07,
+      "p_value_bonferroni": 1.81e-06,
+      "cohens_d": 0.424167,
+      "significant_alpha_005": true
+    },
+    {
+      "policy_a": "legacy_rule",
+      "policy_b": "ml_based",
+      "test_name": "wilcoxon_signed_rank",
+      "statistic": 17915.0,
+      "p_value": 0.00194227,
+      "p_value_bonferroni": 0.01165363,
+      "cohens_d": 0.414462,
+      "significant_alpha_005": true
+    },
+    {
+      "policy_a": "improved_rule",
+      "policy_b": "ml_based",
+      "test_name": "wilcoxon_signed_rank",
+      "statistic": 18427.0,
+      "p_value": 0.00580783,
+      "p_value_bonferroni": 0.03484697,
+      "cohens_d": 0.342154,
+      "significant_alpha_005": true
+    }
+  ]
+}

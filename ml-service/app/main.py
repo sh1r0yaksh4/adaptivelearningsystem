@@ -13,10 +13,4 @@ def home():
 
 @app.post("/predict")
 def predict(data: PredictionInput):
-    print(data)
-    print("whataaa")
-    difficulty = predict_difficulty(data)
-
-    return {
-        "nextDifficulty": difficulty
-    }
+    return predict_difficulty(data)

@@ -7,6 +7,7 @@ const router = Router();
 
 router.post('/', fetch_questions);
 router.get('/start-session', get_first_question);
+router.post('/submit', get_next_question);
 router.get('/submit', get_next_question);
 
 export default router;

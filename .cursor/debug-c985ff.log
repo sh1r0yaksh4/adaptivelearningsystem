@@ -1,0 +1,5 @@
+{"sessionId":"c985ff","timestamp":1785079910000,"location":"dev.sh:cleanup","message":"cleanup invoked","data":{"pids_count":1}},"hypothesisId":"B","runId":"pre-fix"}
+{"sessionId":"c985ff","timestamp":1785079949000,"location":"dev.sh:prisma","message":"running prisma db push","data":{"hasSkipGenerateFlag":false}},"hypothesisId":"A","runId":"pre-fix"}
+{"sessionId":"c985ff","timestamp":1785079950000,"location":"dev.sh:prisma","message":"prisma db push and generate completed","data":{}},"hypothesisId":"D","runId":"pre-fix"}
+{"sessionId":"c985ff","timestamp":1785079950000,"location":"dev.sh:start","message":"starting services","data":{"mlPython":"/Users/ishan/Code/adaptivelearningsystem/ml-service/venv/bin/python","databaseUrlSet":true,"adaptivePolicy":"ml"}},"hypothesisId":"E","runId":"pre-fix"}
+{"sessionId":"c985ff","timestamp":1785080010000,"location":"dev.sh:cleanup","message":"cleanup invoked","data":{"pids_count":3}},"hypothesisId":"B","runId":"pre-fix"}
